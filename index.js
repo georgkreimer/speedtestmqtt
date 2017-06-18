@@ -1,26 +1,47 @@
-const speedTest = require('speedtest-net');
-const test = speedTest({maxTime: 60000});
 const mqtt = require('mqtt');
+const speedTest = require('speedtest-net');
 
 const {url, credentials, topic} = require('./config/mqtt');
-const client = mqtt.connect(url, credentials);
 
-client.on('connect', function() {
-	console.log('connected to MQTT server');
+console.log('Starting speedtest.');
+const test = speedTest({maxTime: 60000});
 
-  test.on('data', data => {
-    const client = mqtt.connect(url, credentials);
+test.on('data', data => {
+  console.log('Completed speedtest.');
 
-    console.log('down: ', data.speeds.download, 'up: ', data.speeds.upload);
+  console.log('Connecting to MQTT server.');
+	const client = mqtt.connect(url, credentials);
 
-    const upstreamTopic = `${topic}/bandwidth/upstream`;
-  	const downstreamTopic = `${topic}/bandwidth/downstream`;
+	client.on('connect', function() {
+		console.log('Connected to MQTT server');
 
-    client.publish(upstreamTopic, data.speeds.download);
-    client.publish(downstreamTopic, data.speeds.upload);
+		const upstreamTopic = `${topic}/bandwidth/upstream`;
+		const downstreamTopic = `${topic}/bandwidth/downstream`;
+
+    console.log('Publishing measurements.');
+    console.log(`  ${downstreamTopic} › ${data.speeds.download}`);
+    console.log(`  ${upstreamTopic} › ${data.speeds.upload}`);
+
+	  client.publish(downstreamTopic, `${data.speeds.download}`);
+    client.publish(upstreamTopic, `${data.speeds.upload}`);
+
+    console.log('Disconnecting from MQTT server.');
+		client.end();
+	});
+
+	client.on('close', () => {
+    console.log('Disconnected from MQTT server.');
+    process.exit(1);
   });
 
-  test.on('error', console.error);
+	client.on('error', error => {
+    console.error('MQTT error:', error);
+    process.exit(0);
+  });
+
 });
 
-client.on('error', console.error);
+test.on('error', error => {
+  console.error('Speedtest error:', error);
+  process.exit(0);
+});
