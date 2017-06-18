@@ -10,31 +10,31 @@ test.on('data', data => {
   console.log('Completed speedtest.');
 
   console.log('Connecting to MQTT server.');
-	const client = mqtt.connect(url, credentials);
+  const client = mqtt.connect(url, credentials);
 
-	client.on('connect', function() {
-		console.log('Connected to MQTT server');
+  client.on('connect', function() {
+    console.log('Connected to MQTT server');
 
-		const upstreamTopic = `${topic}/bandwidth/upstream`;
-		const downstreamTopic = `${topic}/bandwidth/downstream`;
+    const upstreamTopic = `${topic}/bandwidth/upstream`;
+    const downstreamTopic = `${topic}/bandwidth/downstream`;
 
     console.log('Publishing measurements.');
     console.log(`  ${downstreamTopic} › ${data.speeds.download}`);
     console.log(`  ${upstreamTopic} › ${data.speeds.upload}`);
 
-	  client.publish(downstreamTopic, `${data.speeds.download}`);
+    client.publish(downstreamTopic, `${data.speeds.download}`);
     client.publish(upstreamTopic, `${data.speeds.upload}`);
 
     console.log('Disconnecting from MQTT server.');
-		client.end();
-	});
+    client.end();
+  });
 
-	client.on('close', () => {
+  client.on('close', () => {
     console.log('Disconnected from MQTT server.');
     process.exit(1);
   });
 
-	client.on('error', error => {
+  client.on('error', error => {
     console.error('MQTT error:', error);
     process.exit(0);
   });
